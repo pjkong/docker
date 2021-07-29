@@ -1,0 +1,44 @@
+version: '2.3'
+
+networks:
+  oldgen:
+
+services:
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=super_secret_password
+      - MYSQL_USER=ideagenplc
+      - MYSQL_PASSWORD=super_secret_password_two
+      - MYSQL_DATABASE=oldgen
+    ports:
+      - 1257:1257
+    networks:
+      - oldgen
+    volumes: 
+      - ./schema.mysql.sql:/docker-entrypoint-initdb.d/schema.mysql.sql
+
+  yii:
+    build:
+      dockerfile: Dockerfile.debug
+      context: ./
+      args:
+        - APP_LOCATION=/app/interview
+    volumes:
+      - "./:/app/interview"
+      - "./.docker/ssl:/etc/apache2/ssl"
+    expose:
+      - 120
+      - 443
+    networks:
+      - oldgen
+    environment:
+      - VIRTUAL_HOST=https://127.0.0.99, http://127.22.12
+      - RUN_MIGRATION=YES
+      - componentsMySqlHost=mysql
+      - componentsMySqlUser=ideagenplc
+      - componentsMySqlPassword=super_secret_password_two
+      - componentsMySqlDatabase=oldgen
+    depends_on:
+      - mysql
